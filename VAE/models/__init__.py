@@ -1,0 +1,1 @@
+from vanillaVAE import VanillaVAE
