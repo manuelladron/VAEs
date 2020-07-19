@@ -1,5 +1,5 @@
 import torch.nn as nn
-from helper import activations
+from models.helper import activations
 import numpy as np
 
 class Encoder(nn.Module):
@@ -25,11 +25,11 @@ class Encoder(nn.Module):
         in_channels = [input_size[2]] + [d['channel'] for d in conv_config[:-1]]
         
         layers = [ l for indim, d in zip(in_channels,conv_config) for l in \
-            (nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],\
+            ((nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],\
             d['kernel']//2), nn.BatchNorm2d(d['channel']),\
             activations[d.get('act','relu')]()) if el.get('bn',False) else \
-            (nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],\ 
-            d['kernel']//2), activations[d.get('act','relu')]())]
+            (nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],
+            d['kernel']//2), activations[d.get('act','relu')]()))]
         
         self.conv = nn.Sequential(*layers)
         factor = np.product([ d['stride'] for d in conv_config ])
@@ -65,10 +65,10 @@ class Decoder(nn.Module):
         
         #FIXME Need to correct the padding calculation
         layers = [ l for indim, d in zip(in_channels,conv_config) for l in \
-            (nn.BatchNorm2d(d['channel']), activations[d.get('act','relu')](),
+            ((nn.BatchNorm2d(d['channel']), activations[d.get('act','relu')](),
             nn.ConvTranspose2d(indim,d['channel'],d['kernel'],d['stride'],1)) 
             if el.get('bn',False) else (activations[d.get('act','relu')](),
-            nn.ConvTranspose2d(indim,d['channel'],d['kernel'],d['stride'],1))] 
+            nn.ConvTranspose2d(indim,d['channel'],d['kernel'],d['stride'],1)))] 
         
         layers.append(activations['relu']())
         layers.append(nn.Conv2d(conv_config[-1]['channel'],output_size[2],3,1,1))
@@ -119,7 +119,7 @@ class ConvVAE(nn.Module):
         return x
     
     @staticmethod
-    def construct(input_size,base_channel,config_enc,config_enc,latent_dim,device):
+    def construct(input_size,base_channel,config_enc,config_dec,latent_dim,device):
         
         encoder = Encoder(input_size,config_enc,latent_dim)
         decoder = Decoder(input_size,base_channel,config_dec,latent_dim)

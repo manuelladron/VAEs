@@ -1,6 +1,6 @@
 import torch.nn as nn
 import copy
-from helper import activations
+from models.helper import activations
 
 class Encoder(nn.Module):
     """ Models the mean and log standard deviation for q(z|x) which is assumed
@@ -31,9 +31,9 @@ class Encoder(nn.Module):
         prev_dims = [ h['dim'] for h in hiddens ]
 
         layers = [ l for indim, d in zip(prev_dims,hiddens) for l in \
-            (nn.Linear(indim,d['dim']),nn.BatchNorm1d(d['dim']),\
+            ((nn.Linear(indim,d['dim']),nn.BatchNorm1d(d['dim']),\
             activations[d.get('act','relu')]()) if el.get('bn',False) else \
-            (nn.Linear(indim,d['dim']), activations[d.get('act','relu')]()]
+            (nn.Linear(indim,d['dim']), activations[d.get('act','relu')]()))]
         
         self.net = nn.Sequential(*layers)
         self.shared = shared
@@ -53,7 +53,7 @@ class Encoder(nn.Module):
         """
         if not self.shared:
             return self.net(x), self.net2(x)
-        else
+        else:
             return self.net(x).chunk(2,dim=1)
 
 
