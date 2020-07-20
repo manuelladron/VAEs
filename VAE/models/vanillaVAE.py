@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import copy
 from .helper import activations
@@ -32,7 +33,7 @@ class Encoder(nn.Module):
 
         layers = [ l for indim, d in zip(prev_dims,hiddens) for l in \
             ((nn.Linear(indim,d['dim']),nn.BatchNorm1d(d['dim']),\
-            activations[d.get('act','relu')]()) if el.get('bn',False) else \
+            activations[d.get('act','relu')]()) if d.get('bn',False) else \
             (nn.Linear(indim,d['dim']), activations[d.get('act','relu')]()))]
         
         self.net = nn.Sequential(*layers)

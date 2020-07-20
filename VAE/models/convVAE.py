@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from .helper import activations
 import numpy as np
@@ -27,7 +28,7 @@ class Encoder(nn.Module):
         layers = [ l for indim, d in zip(in_channels,conv_config) for l in \
             ((nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],\
             d['kernel']//2), nn.BatchNorm2d(d['channel']),\
-            activations[d.get('act','relu')]()) if el.get('bn',False) else \
+            activations[d.get('act','relu')]()) if d.get('bn',False) else \
             (nn.Conv2d(indim,d['channel'],d['kernel'],d['stride'],
             d['kernel']//2), activations[d.get('act','relu')]()))]
         
@@ -67,7 +68,7 @@ class Decoder(nn.Module):
         layers = [ l for indim, d in zip(in_channels,conv_config) for l in \
             ((nn.BatchNorm2d(d['channel']), activations[d.get('act','relu')](),
             nn.ConvTranspose2d(indim,d['channel'],d['kernel'],d['stride'],1)) 
-            if el.get('bn',False) else (activations[d.get('act','relu')](),
+            if d.get('bn',False) else (activations[d.get('act','relu')](),
             nn.ConvTranspose2d(indim,d['channel'],d['kernel'],d['stride'],1)))] 
         
         layers.append(activations['relu']())
