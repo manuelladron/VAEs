@@ -1,3 +1,6 @@
+import torch
+import numpy as np
+
 def kl_loss(mu_z,logstd_z):
     
     l1 = torch.exp(2*logstd_z)

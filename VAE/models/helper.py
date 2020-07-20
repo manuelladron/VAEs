@@ -1,6 +1,6 @@
 import torch.nn as nn
 
 activations = {
-    'ReLU': nn.ReLU,
-    'Indentity': nn.Identity
+    'relu': nn.ReLU,
+    'identity': nn.Identity
 }

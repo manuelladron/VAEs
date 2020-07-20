@@ -1,6 +1,6 @@
 import torch.nn as nn
 import copy
-from models.helper import activations
+from .helper import activations
 
 class Encoder(nn.Module):
     """ Models the mean and log standard deviation for q(z|x) which is assumed
@@ -26,7 +26,7 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         
         hiddens.append({'dim': 2*latent_dim if shared else latent_dim,\
-            'act':nn.ReLU(),'bn':False})
+            'act':'identity','bn':False})
         
         prev_dims = [ h['dim'] for h in hiddens ]
 
@@ -65,6 +65,9 @@ Decoder = Encoder
 class VanillaVAE(nn.Module):
     
     def __init__(self,encoder,decoder,latent_dim,device):
+        
+        super(VanillaVAE,self).__init__()
+
         self.enc = encoder
         self.dec = decoder
         self.latent_dim = latent_dim

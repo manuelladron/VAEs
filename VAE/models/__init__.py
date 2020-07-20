@@ -1,2 +1,2 @@
-from models.vanillaVAE import VanillaVAE
-from models.convVAE import ConvVAE
+from .vanillaVAE import VanillaVAE
+from .convVAE import ConvVAE

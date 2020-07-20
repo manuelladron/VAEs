@@ -1,5 +1,5 @@
 import torch.nn as nn
-from models.helper import activations
+from .helper import activations
 import numpy as np
 
 class Encoder(nn.Module):
