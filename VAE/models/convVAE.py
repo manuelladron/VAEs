@@ -100,9 +100,7 @@ class ConvVAE(nn.Module):
 
     def forward(self,x):
         
-        mu_z, logstd_z = self.enc(x)
-        
-        z = torch.randn_like(logstd_z,device=device)*logstd_z.exp() + mu_z
+        z = self.mapTopLatent(x)
 
         x_recon, logstd_noise = self.dec(z)
 
@@ -119,6 +117,14 @@ class ConvVAE(nn.Module):
 
         return x
     
+    def mapToLatent(self,x):
+        
+        mu_z, logstd_z = self.enc(x)
+        
+        z = torch.randn_like(logstd_z,device=device)*logstd_z.exp() + mu_z
+        
+        return z
+
     @staticmethod
     def construct(input_size,base_channel,config_enc,config_dec,latent_dim,device):
         
