@@ -1,3 +1,4 @@
 *.pyc
 temp/
 *.swp
+*.DS_Store
