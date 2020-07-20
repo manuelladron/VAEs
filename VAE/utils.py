@@ -17,8 +17,8 @@ def print_and_collect(engine, evaluator, dataloader, mode, history_dict):
 def plot_results( training_hist, validation_hist ):
     
     for k in training_hist.keys():
-        plt.plot(training_history[k], label = k + '-train')
-        plt.plot(validation_history[k], label = k + '-val')
+        plt.plot(training_hist[k], label = k + '-train')
+        plt.plot(validation_hist[k], label = k + '-val')
 
     plt.xlabel('epochs')
     plt.ylabel('nats/dim')
