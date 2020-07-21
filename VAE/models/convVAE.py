@@ -80,7 +80,7 @@ class Decoder(nn.Module):
     def forward(self,z):
         
         z = self.fc(z)
-        z = z.rehsape(-1,*self.base_size)
+        z = z.reshape(-1,*self.base_size)
         x_recon = self.deconv(z)
         
         # implicitely assume variance of 1
