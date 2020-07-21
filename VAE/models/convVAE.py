@@ -52,15 +52,16 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     
-    def __init__(self,output_size,base_channel,conv_config,latent_dim):
+    def __init__(self,output_size,base_channel,conv_config,latent_dim,device):
        
         super(Decoder,self).__init__()
         
+        self.device = device
         in_channels = [base_channel] + [d['channel'] for d in conv_config[:-1]]
         
-        factor = np.product([ d['channel'] for d in conv_config ])
-        self.base_size = (base_channel, out_size[0]//factor, 
-            out_size[1]//factor )
+        factor = np.product([ d['stride'] for d in conv_config ])
+        self.base_size = (base_channel, output_size[0]//factor, 
+            output_size[1]//factor )
 
         self.fc = nn.Linear(latent_dim,np.product(self.base_size))
         
@@ -83,7 +84,7 @@ class Decoder(nn.Module):
         x_recon = self.deconv(z)
         
         # implicitely assume variance of 1
-        logstd_noise = np.zeros_like(x_recon)
+        logstd_noise = torch.zeros_like(x_recon,device=self.device)
 
         return x_recon, logstd_noise
 
@@ -100,7 +101,9 @@ class ConvVAE(nn.Module):
 
     def forward(self,x):
         
-        z = self.mapTopLatent(x)
+        mu_z, logstd_z = self.enc(x)
+        
+        z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
 
         x_recon, logstd_noise = self.dec(z)
 
@@ -113,7 +116,7 @@ class ConvVAE(nn.Module):
         x, logstd_noise = self.dec(z)
 
         if noisy:
-            x = torch.randn_like(logstd_noise)*logstd_noise.exp() + x
+            x = torch.randn_like(logstd_noise,device=self.device)*logstd_noise.exp() + x
 
         return x
     
@@ -121,7 +124,7 @@ class ConvVAE(nn.Module):
         
         mu_z, logstd_z = self.enc(x)
         
-        z = torch.randn_like(logstd_z,device=device)*logstd_z.exp() + mu_z
+        z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
         
         return z
 
@@ -129,7 +132,7 @@ class ConvVAE(nn.Module):
     def construct(input_size,base_channel,config_enc,config_dec,latent_dim,device):
         
         encoder = Encoder(input_size,config_enc,latent_dim)
-        decoder = Decoder(input_size,base_channel,config_dec,latent_dim)
+        decoder = Decoder(input_size,base_channel,config_dec,latent_dim,device)
 
         model = ConvVAE(encoder,decoder,latent_dim,device)
         model = model.to(device)

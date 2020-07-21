@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
 
 def print_and_collect(engine, evaluator, dataloader, mode, history_dict):
     
@@ -41,5 +43,5 @@ def interpolate_latent(x1,x2,model,k=10):
     z1 = model.mapToLatent(x1.unsqueeze(0))
     z2 = model.mapToLatent(x2.unsqueeze(0))
 
-    res = [ model.dec(torch.lerp(z1,z2,w))[0] for w in np.linspace(0,1,k,True) ]
+    res = [ model.dec(torch.lerp(z1,z2,w))[0].squeeze(0) for w in np.linspace(0,1,k,True) ]
     return res
