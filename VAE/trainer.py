@@ -4,7 +4,7 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Loss, RunningAverage
 from .loss import kl_loss, recon_loss
 
-def create_basic_trainer(model,optimizer,device,beta=1,**kwargs):
+def create_basic_trainer(model,optimizer,device,beta=1,kl_loss=kl_loss,recon_loss=recon_loss,**kwargs):
     
     evaluator = kwargs.get('evaluator', None)
     val_loader = kwargs.get('val_loader', None)
@@ -18,9 +18,8 @@ def create_basic_trainer(model,optimizer,device,beta=1,**kwargs):
         x_recon, logstd_noise, mu_z, logstd_z = model(x)
         
         kl = kl_loss(mu_z,logstd_z)
-        recon = recon_loss(x, x_recon, logstd_noise, device)
+        recon = recon_loss(x, x_recon, logstd_noise)
         loss = recon + beta * kl
-        
         loss.backward()
         optimizer.step()
         return loss.item(), recon.item(), kl.item()
@@ -41,7 +40,7 @@ def create_basic_trainer(model,optimizer,device,beta=1,**kwargs):
     return trainer
 
 
-def create_basic_evaluator(model, device, beta=1, **kwargs):
+def create_basic_evaluator(model, device, beta=1, kl_loss=kl_loss, recon_loss=recon_loss, **kwargs):
     
     def evaluate_function(engine,batch):
         model.eval()
@@ -58,7 +57,7 @@ def create_basic_evaluator(model, device, beta=1, **kwargs):
     # Registering metrics
     m1 = Loss(kl_loss, output_transform=lambda x:(x[2]['mu_z'],x[2]['logstd_z']))
     m2 = Loss(recon_loss, output_transform=lambda x:(x[0],x[1],
-        {'logstd_noise':x[2]['logstd_noise'],'device':device}))
+        {'logstd_noise':x[2]['logstd_noise']}))
     m1.attach(evaluator, 'kl_loss')
     m2.attach(evaluator, 'recon_loss')
 
