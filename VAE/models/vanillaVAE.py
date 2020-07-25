@@ -29,7 +29,7 @@ class Encoder(nn.Module):
         hiddens.append({'dim': 2*latent_dim if shared else latent_dim,\
             'act':'identity','bn':False})
         
-        prev_dims = [ h['dim'] for h in hiddens ]
+        prev_dims = [input_dim] + [ h['dim'] for h in hiddens[:-1] ]
 
         layers = [ l for indim, d in zip(prev_dims,hiddens) for l in \
             ((nn.Linear(indim,d['dim']),nn.BatchNorm1d(d['dim']),\
@@ -105,6 +105,61 @@ class VanillaVAE(nn.Module):
         decoder = Decoder(latent_dim,hiddens_dec,input_dim,shared_dec)
 
         model = VanillaVAE(encoder,decoder,latent_dim,device)
+        model = model.to(device)
+
+        return model
+
+class MultiLayerVAE(nn.Module):
+
+    def __init__(self,encoders,decoder,latent_dim,device):
+        
+        super(MultiLayerVAE,self).__init__()
+
+        self.encoders = nn.ModuleList(encoders)
+        self.decoder = decoder
+        self.latent_dim = latent_dim
+        self.device = device
+
+    def forward(self,x):
+        
+        mu_zs = []
+        logstd_zs = []
+        
+        z = x
+        for enc in self.encoders:
+            mu_z, logstd_z = enc(z)
+            z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
+            
+            mu_zs.append(mu_z)
+            logstd_zs.append(logstd_z)
+
+        x_recon, logstd_noise = self.decoder(z)
+
+        return x_recon, logstd_noise, mu_zs, logstd_zs
+    
+    def mapToLatent(self,x):
+        
+        #TODO Extend this function to provide latent variables form other layers 
+        z = x
+        mu_zs = []
+        logstd_zs = []
+
+        for enc in self.encoders:
+            mu_z, logstd_z = enc(z)
+            z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
+            
+            mu_zs.append(mu_z)
+            logstd_zs.append(logstd_z)
+        
+        return z
+
+    @staticmethod
+    def construct(input_dim,latent_dim,hiddens_enc,hiddens_dec,shared_enc,shared_dec,device):
+        encoders = [ Encoder(input_dim,hiddens_enc[0],latent_dim,shared_enc) ]
+        encoders = encoders + [ Encoder(latent_dim,hiddens_enc_i,latent_dim,shared_enc) for hiddens_enc_i in hiddens_enc[1:] ]
+        decoder = Decoder(latent_dim,hiddens_dec,input_dim,shared_dec)
+
+        model = MultiLayerVAE(encoders,decoder,latent_dim,device)
         model = model.to(device)
 
         return model

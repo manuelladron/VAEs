@@ -1,2 +1,2 @@
-from .vanillaVAE import VanillaVAE
+from .vanillaVAE import VanillaVAE, MultiLayerVAE
 from .convVAE import ConvVAE
