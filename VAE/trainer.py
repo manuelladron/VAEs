@@ -4,7 +4,7 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Loss, RunningAverage
 from .loss import kl_loss, recon_loss
 
-def create_basic_trainer(model,optimizer,device,beta=1,kl_loss=kl_loss,recon_loss=recon_loss,**kwargs):
+def create_basic_trainer(model,optimizer,device,beta=1,kl_loss=kl_loss,recon_loss=recon_loss,mode=0,**kwargs):
     
     evaluator = kwargs.get('evaluator', None)
     val_loader = kwargs.get('val_loader', None)
@@ -14,11 +14,17 @@ def create_basic_trainer(model,optimizer,device,beta=1,kl_loss=kl_loss,recon_los
         model.train()
         optimizer.zero_grad()        
         x = x.to(device)
-
-        x_recon, logstd_noise, mu_z, logstd_z = model(x)
         
-        kl = kl_loss(mu_z,logstd_z)
-        recon = recon_loss(x, x_recon, logstd_noise)
+        if mode == 0:
+            x_recon, logstd_noise, mu_z, logstd_z = model(x)
+        
+            kl = kl_loss(mu_z,logstd_z)
+            recon = recon_loss(x, x_recon, logstd_noise)
+        elif mode == 1:
+            x_recon, logstd_noise, z, mu_zs_prior, logstd_zs_prior, mu_zs, logstd_zs = model(x)
+            kl = kl_loss(z,mu_zs_prior,logstd_zs_prior,mu_zs,logstd_zs)
+            recon = recon_loss(x,x_recon,logstd_noise)
+
         loss = recon + beta * kl
         loss.backward()
         optimizer.step()
