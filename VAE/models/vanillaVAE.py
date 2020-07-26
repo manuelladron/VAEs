@@ -111,12 +111,12 @@ class VanillaVAE(nn.Module):
 
 class MultiLayerVAE(nn.Module):
 
-    def __init__(self,encoders,decoder,latent_dim,device):
+    def __init__(self,encoders,decoders,latent_dim,device):
         
         super(MultiLayerVAE,self).__init__()
 
         self.encoders = nn.ModuleList(encoders)
-        self.decoder = decoder
+        self.decoders = nn.ModuleList(decoders)
         self.latent_dim = latent_dim
         self.device = device
 
@@ -124,32 +124,39 @@ class MultiLayerVAE(nn.Module):
         
         mu_zs = []
         logstd_zs = []
-        
-        z = x
+
+        z = [x]
         for enc in self.encoders:
-            mu_z, logstd_z = enc(z)
-            z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
+            mu_z, logstd_z = enc(z[-1])
+            z.append(torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z)
             
             mu_zs.append(mu_z)
             logstd_zs.append(logstd_z)
+        
+        mu_zs_prior = []
+        logstd_zs_prior = []
 
-        x_recon, logstd_noise = self.decoder(z)
+        for zz, dec in zip(z[2:],self.decoders[1:]):
+            mu_z_prior, logstd_z_prior = dec(zz)
 
-        return x_recon, logstd_noise, mu_zs, logstd_zs
+            mu_zs_prior.append(mu_z_prior)
+            logstd_zs_prior.append(logstd_z_prior)
+        
+        mu_zs_prior.append(torch.zeros_like(z[-1],device=self.device))
+        logstd_zs_prior.append(torch.zeros_like(z[-1],device=self.device))
+
+        x_recon, logstd_noise = self.decoders[0](z[1])
+   
+        return x_recon, logstd_noise, z[1:], mu_zs_prior, logstd_zs_prior, mu_zs, logstd_zs
     
     def mapToLatent(self,x):
         
         #TODO Extend this function to provide latent variables form other layers 
         z = x
-        mu_zs = []
-        logstd_zs = []
 
         for enc in self.encoders:
             mu_z, logstd_z = enc(z)
             z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
-            
-            mu_zs.append(mu_z)
-            logstd_zs.append(logstd_z)
         
         return z
 
@@ -157,9 +164,11 @@ class MultiLayerVAE(nn.Module):
     def construct(input_dim,latent_dim,hiddens_enc,hiddens_dec,shared_enc,shared_dec,device):
         encoders = [ Encoder(input_dim,hiddens_enc[0],latent_dim,shared_enc) ]
         encoders = encoders + [ Encoder(latent_dim,hiddens_enc_i,latent_dim,shared_enc) for hiddens_enc_i in hiddens_enc[1:] ]
-        decoder = Decoder(latent_dim,hiddens_dec,input_dim,shared_dec)
+        
+        decoders = [ Decoder(latent_dim,hiddens_dec[0],input_dim,shared_dec) ]
+        decoders = decoders + [ Decoder(latent_dim,hiddens_dec_i,latent_dim,shared_dec) for hiddens_dec_i in hiddens_dec[1:] ]
 
-        model = MultiLayerVAE(encoders,decoder,latent_dim,device)
+        model = MultiLayerVAE(encoders,decoders,latent_dim,device)
         model = model.to(device)
 
         return model
