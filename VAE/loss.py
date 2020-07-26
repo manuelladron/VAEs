@@ -36,9 +36,12 @@ def log_prob_ratio_normal(z,mu_z_prior,logstd_z_prior,mu_z,logstd_z):
     
     return (-normal.Normal(mu_z_prior.flatten(start_dim=1),logstd_z_prior.exp().flatten(start_dim=1)).log_prob(z.flatten(start_dim=1)) + normal.Normal(mu_z.flatten(start_dim=1),logstd_z.exp().flatten(start_dim=1)).log_prob(z.flatten(start_dim=1))).sum(1).mean()
 
-def makeLossLayered(loss):
+def makeLossLayered(loss,weights=None):
     
     def func(*args):
-       return sum([  loss(*arg) for arg in zip(*args) ])
+        if weights is None:
+            return sum([  loss(*arg) for arg in zip(*args) ])
+        else:
+            return sum([ w*loss(*arg) for arg, w in zip(zip(*args),weights) ])
 
     return func
