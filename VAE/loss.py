@@ -1,9 +1,9 @@
 import torch
-from torch.distributions import bernoulli
+from torch.distributions import bernoulli, normal
 import numpy as np
 
 def kl_loss(mu_z,logstd_z):
-    
+    # Assume standard normal prior    
     l1 = torch.exp(2*logstd_z)
     l2 = mu_z**2
     l3 = 2*logstd_z
@@ -30,6 +30,11 @@ def recon_loss_bernoulli(x,logits,*args,**kwargs):
     # *args to take in extra variables to fit in the existing trainer setup
     rv = bernoulli.Bernoulli(logits=logits)
     return -rv.log_prob(x).sum(1).mean()
+
+
+def log_prob_ratio_normal(z,mu_z_prior,logstd_z_prior,mu_z,logstd_z):
+    
+    return (normal.Normal(mu_z_prior.flatten(start_dim=1),logstd_z_prior.exp().flatten(start_dim=1)).log_prob(z.flatten(start_dim=1)) - normal.Normal(mu_z.flatten(start_dim=1),logstd_z.exp().flatten(start_dim=1)).log_prob(z.flatten(start_dim=1))).sum(1).mean()
 
 def makeLossLayered(loss):
     
