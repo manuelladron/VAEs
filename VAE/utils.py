@@ -17,9 +17,11 @@ def print_and_collect(engine, evaluator, dataloader, mode, history_dict,supress=
         history_dict[key].append(metrics[key])
 
 
-def plot_results( training_hist, validation_hist=None ):
+def plot_results( training_hist, validation_hist=None, keys=None ):
     
-    for k in training_hist.keys():
+    keys = training_hist.keys() if keys is None else keys
+
+    for k in keys:
         plt.plot(training_hist[k], label = k + '-train')
         if validation_hist is not None:
             plt.plot(validation_hist[k], label = k + '-val')
