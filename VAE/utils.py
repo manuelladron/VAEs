@@ -48,11 +48,12 @@ def interpolate_latent(x1,x2,model,k=10):
     res = [ model.dec(torch.lerp(z1,z2,w))[0].squeeze(0) for w in np.linspace(0,1,k,True) ]
     return res
 
-def latent_analysis(x,model,l,offsets,device):
+def latent_analysis(x,model,l,offsets,noisy,device):
     
-    z = model.mapToLatent(x.unsqueeze(0))
+    z = model.mapToLatent(x.unsqueeze(0),noisy)
     z = z.repeat((len(offsets),1))
     z[:,l] += torch.tensor(offsets,device=device)
+    
+    res = model.dec(z)[0]
 
-    res = [ model.dec(im) for im in z ]
     return res
