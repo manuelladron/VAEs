@@ -45,7 +45,6 @@ def create_basic_trainer(model,optimizer,device,beta=1,kl_loss=kl_loss,recon_los
 
     return trainer
 
-
 def create_basic_evaluator(model, device, beta=1, kl_loss=kl_loss, recon_loss=recon_loss, **kwargs):
     
     def evaluate_function(engine,batch):
@@ -71,3 +70,44 @@ def create_basic_evaluator(model, device, beta=1, kl_loss=kl_loss, recon_loss=re
     m3.attach(evaluator, 'elbo_loss')
 
     return evaluator
+
+def create_lanalysis_trainer(model,optimizer,device,latent_dim,beta=1,kl_loss=kl_loss,recon_loss=recon_loss,**kwargs):
+    
+    evaluator = kwargs.get('evaluator', None)
+    val_loader = kwargs.get('val_loader', None)
+    post_func = kwargs.get('post_func', lambda x:x)
+
+    def process_function(engine,x):
+        
+        model.train()
+        optimizer.zero_grad()        
+        x = x.to(device)
+        
+        x_recon, logstd_noise, mu_z, logstd_z = model(x)
+        kls = kl_loss(mu_z,logstd_z,reduce=False)
+        recon = recon_loss(x,x_recon,logstd_noise)
+        kl = post_func(kls.sum())
+
+        loss = recon + beta * kl
+        loss.backward()
+        optimizer.step()
+        return loss.item(), recon.item(), kl.item(), kls
+
+    trainer = Engine(process_function)
+
+    # Register running averages for main losses
+    RunningAverage(output_transform=lambda x: x[0]).attach(trainer,'elbo_loss')
+    RunningAverage(output_transform=lambda x: x[1]).attach(trainer,'recon_loss')
+    RunningAverage(output_transform=lambda x: x[2]).attach(trainer,'kl_loss')
+    
+    for i in range(latent_dim):
+        RunningAverage(output_transform=lambda x: x[3][i]).attach(trainer,'kl_loss_'+str(i))
+
+    # Attach evaluator if passed
+    if evaluator:
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def run_validation(engine):
+            evaluator.run(val_loader,max_epochs=1)
+
+    return trainer
+
