@@ -120,12 +120,15 @@ class ConvVAE(nn.Module):
 
         return x
     
-    def mapToLatent(self,x):
+    def mapToLatent(self,x,noisy=True):
         
         mu_z, logstd_z = self.enc(x)
         
-        z = torch.randn_like(logstd_z,device=self.device)*logstd_z.exp() + mu_z
-        
+        z = mu_z
+
+        if noisy:
+            z += torch.randn_like(logstd_z,device=self.device)*logstd_z.exp()
+
         return z
 
     @staticmethod
