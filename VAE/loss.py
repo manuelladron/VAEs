@@ -2,13 +2,29 @@ import torch
 from torch.distributions import bernoulli, normal
 import numpy as np
 
-def kl_loss(mu_z,logstd_z):
+def kl_loss(mu_z,logstd_z,reduce=True):
+    '''
+    Args:
+        reduce: Whether to sum losses across features. Mean across samples is still done.
+    '''
+
     # Assume standard normal prior    
     l1 = torch.exp(2*logstd_z)
     l2 = mu_z**2
     l3 = 2*logstd_z
+    
+    if reduce:
+        return 0.5*(l1+l2-1-l3).sum(1).mean()
+    else:
+        return 0.5*(l1+l2-1-l3).mean(0)
 
-    return 0.5*(l1+l2-1-l3).sum(1).mean()
+
+def get_capacity_kl_loss(C):
+    
+    def func(mu_z,logstd_z,reduce=True):
+        return kl_loss(mu_z,logstd_z,reduce) - C 
+    
+    return func
 
 def recon_loss(x,x_recon,logstd_noise):
     
