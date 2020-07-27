@@ -44,8 +44,9 @@ def elbo_loss(x,x_recon,logstd_noise,mu_z,logstd_z,device):
 
 def recon_loss_bernoulli(x,logits,*args,**kwargs):
     # *args to take in extra variables to fit in the existing trainer setup
-    rv = bernoulli.Bernoulli(logits=logits)
-    return -rv.log_prob(x).sum(1).mean()
+    # NOTE: Only pass 0 and 1s in x, otherwise we get absurd probabilities
+    rv = bernoulli.Bernoulli(logits=logits.reshape(logits.shape[0],-1))
+    return -rv.log_prob(x.reshape(logits.shape[0],-1)).sum(1).mean()
 
 
 def log_prob_ratio_normal(z,mu_z_prior,logstd_z_prior,mu_z,logstd_z):
