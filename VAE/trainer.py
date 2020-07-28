@@ -101,7 +101,7 @@ def create_lanalysis_trainer(model,optimizer,device,latent_dim,beta=1,kl_loss=kl
     RunningAverage(output_transform=lambda x: x[2]).attach(trainer,'kl_loss')
     
     for i in range(latent_dim):
-        RunningAverage(output_transform=lambda x: x[3][i]).attach(trainer,'kl_loss_'+str(i))
+        RunningAverage(output_transform=lambda x,i=i: x[3][i]).attach(trainer,'kl_loss_'+str(i))
 
     # Attach evaluator if passed
     if evaluator:
